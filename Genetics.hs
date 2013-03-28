@@ -29,10 +29,14 @@ breedPop c p i = do
                   if (targets /= [])
                      then
                         putStrLn ("Target met in generation " ++ show i ++ ".\n" ++ (showTargets targetsc))
-                     else do
-                       putStrLn ("Finished with iteration " ++ show i ++ ".\nBreeding population...")
-                       newGen <- newGeneration c p []
-                       breedPop c newGen (i+1)
+                     else
+                        if (maxGen c < i)
+                           then
+                              putStrLn "Maximum generation reached."
+                           else do
+                              putStrLn ("Finished with iteration " ++ show i ++ ".\nBreeding population...")
+                              newGen <- newGeneration c p []
+                              breedPop c newGen (i+1)
                   where 
                   fitnessList = map (fitnessFunction c) p
                   targetsc = [x | x <- p, (fitnessFunction c) x == targetFitness c]
