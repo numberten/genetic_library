@@ -1,6 +1,8 @@
 module Genetics ( 
                   Configuration (..),
                   defaultConfig,
+                  Gene(Val),
+                  Chromosome,
                   runGA
                 )
                 where
@@ -38,7 +40,7 @@ breedPop c p i = do
                      else
                         if (maxGen c < i)
                            then
-                              putStrLn "Maximum generation reached."
+                              putStrLn ("Maximum generation reached.\nMost fit chromosome: " ++ (showTargets (ordered c) mostFitc) ++ " with fitness " ++ show fmaximum)
                            else do
                               putStrLn ("Finished with iteration " ++ show i ++ ".\nBreeding population...")
                               newGen <- newGeneration c p []
@@ -46,8 +48,10 @@ breedPop c p i = do
                               breedPop c newGen (i+1)
                   where 
                   fitnessList = map (fitnessFunction c) p
-                  targetsc = [x | x <- p, (fitnessFunction c) x == targetFitness c]
-                  targets = filter (== targetFitness c) fitnessList
+                  targetsc = [x | x <- p, (fitnessFunction c) x >= targetFitness c]
+                  mostFitc = [x | x <- p, (fitnessFunction c) x == fmaximum]
+                  targets = filter (>= targetFitness c) fitnessList
+                  mostFit = filter (== fmaximum) fitnessList
                   fmaximum = maximum fitnessList
                   faverage = ftotal / (fromIntegral $ length p)
                   ftotal = sum fitnessList
@@ -143,7 +147,7 @@ orderedCrossover crossoverPoint1 crossoverPoint2 parent1 parent2 = return (child
       child1          = (take l1 remainderC1) ++ secondThirdP1 ++ (drop l1 remainderC1)
       child2          = (take l1 remainderC2) ++ secondThirdP2 ++ (drop l1 remainderC2)
       remainderC1     = (thirdThirdP2 ++ firstThirdP2 ++ secondThirdP2) \\ secondThirdP1
-      remainderC2     = (thirdThirdP1 ++ firstThirdP1 ++ secondThirdP2) \\ secondThirdP2
+      remainderC2     = (thirdThirdP1 ++ firstThirdP1 ++ secondThirdP1) \\ secondThirdP2
 
 getRandom (lower,upper) = newStdGen >>= return . fst . randomR (lower, upper)
 

@@ -14,11 +14,12 @@ Currently Configurable Values
    - targetFitness   (the fitness goal upon which the algorithm ends)
    - crossoverRate   (the likelihood that genes selected to breed will crossover)
    - fitnessFunction (a function that takes a chromosome and returns a fitness)
+   - ordered         (boolean value, toggle for ordered chromosomes)
 
 Configurable Values To Come
 ---------------------------
 
    - mutationRate
    - flag for two-point crossover
-   - flag for ordered chromosomes
+   - ~~flag for ordered chromosomes~~
    - tournament selection option
