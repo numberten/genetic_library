@@ -1,5 +1,6 @@
 module Genetics ( 
                   Configuration (..),
+                  defaultConfig,
                   runGA
                 )
                 where
@@ -16,6 +17,8 @@ data Configuration = Config { geneSize             :: Int,
                               crossoverRate        :: Float,
                               ordered              :: Bool
                             }
+
+defaultConfig = Config { geneSize = 0, chromosomeSize = 0, populationSize = 0, maxGen = 0, targetFitness = 0, crossoverRate = 0, ordered = False, fitnessFunction = (\w -> 0.0) }
 
 data Gene = BitString [Char] | Val Int deriving (Show, Eq)
 --type Gene = [Char]
@@ -143,20 +146,7 @@ orderedCrossover crossoverPoint1 crossoverPoint2 parent1 parent2 = return (child
       remainderC2     = (thirdThirdP1 ++ firstThirdP1 ++ secondThirdP2) \\ secondThirdP2
 
 getRandom (lower,upper) = newStdGen >>= return . fst . randomR (lower, upper)
-{--
--- crossover :
-crossover :: Configuration -> Chromosome -> Chromosome -> IO (Chromosome,Chromosome)
-crossover c c1 c2 = (newStdGen >>= return . fst . randomR (0.0, 1.0)) >>= (\x -> if (x > crossoverRate c) then return (c1, c2) else getFlipBit c >>= (\z -> onePointCrossover (geneSize c) z c1 c2))
 
-onePointCrossover :: Int -> Int -> Chromosome -> Chromosome -> IO (Chromosome, Chromosome)
-onePointCrossover genesize i c1 c2 = return (breakByGene genesize (take i c1' ++ drop i c2') [], breakByGene genesize (take i c2' ++ drop i c1') [])
-               where
-                  c1' = concat c1
-                  c2' = concat c2
-                  breakByGene :: Int -> Gene -> Chromosome -> Chromosome
-                  breakByGene _ [] acc = acc
-                  breakByGene i cs acc = breakByGene i (drop i cs) ((take i cs):acc)
---}
 -- Generate Functions --
 
 generate_gene :: Int -> Configuration -> IO Gene
