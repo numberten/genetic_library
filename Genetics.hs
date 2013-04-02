@@ -45,6 +45,7 @@ breedPop c p i = do
                               putStrLn ("Finished with iteration " ++ show i ++ ".\nBreeding population...")
                               newGen <- newGeneration c p []
                               putStrLn $ "Total fitness: " ++ show ftotal
+                              putStrLn $ "Highest fitness: " ++ show fmaximum
                               breedPop c newGen (i+1)
                   where 
                   fitnessList = map (fitnessFunction c) p
