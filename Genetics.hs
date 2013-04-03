@@ -17,13 +17,13 @@ data Configuration = Config { geneSize             :: Int,
                               targetFitness        :: Float,
                               fitnessFunction      :: Chromosome -> Float,
                               crossoverRate        :: Float,
-                              ordered              :: Bool
+                              ordered              :: Bool,
+                              mutationRate         :: Float
                             }
 
-defaultConfig = Config { geneSize = 0, chromosomeSize = 0, populationSize = 0, maxGen = 0, targetFitness = 0, crossoverRate = 0, ordered = False, fitnessFunction = (\w -> 0.0) }
+defaultConfig = Config { geneSize = 0, chromosomeSize = 0, populationSize = 0, maxGen = 0, targetFitness = 0, crossoverRate = 0, mutationRate = 0, ordered = False, fitnessFunction = (\w -> 0.0) }
 
 data Gene = BitString [Char] | Val Int deriving (Show, Eq)
---type Gene = [Char]
 type Chromosome = [Gene]
 type Population = [Chromosome]
  
@@ -61,22 +61,14 @@ newGeneration :: Configuration -> Population -> Population -> IO Population
 newGeneration c old new | populationSize c == length new = return new
                         | populationSize c == (length new) - 1 =  do
                                                                      (parent1, parent2) <- rouletteSelect c old
-                                                                     bool <- checkCrossover c
-                                                                     if (bool)
-                                                                        then do
-                                                                           (child1, _) <- crossover c parent1 parent2
-                                                                           newGeneration c old (child1:new)
-                                                                        else
-                                                                           newGeneration c old (parent1:new)
+                                                                     (child1, child2)   <- checkCrossover c parent1 parent2
+                                                                     (child1', child2') <- checkMutation c child1 child2
+                                                                     newGeneration c old (child1:new)
                         | otherwise =                             do
                                                                      (parent1, parent2) <- rouletteSelect c old
-                                                                     bool <- checkCrossover c
-                                                                     if (bool)
-                                                                        then do
-                                                                           (child1, child2) <- crossover c parent1 parent2
-                                                                           newGeneration c old (child1:child2:new)
-                                                                        else
-                                                                           newGeneration c old (parent1:parent2:new)
+                                                                     (child1, child2)   <- checkCrossover c parent1 parent2
+                                                                     (child1', child2') <- checkMutation c child1 child2
+                                                                     newGeneration c old (child1':child2':new)
 
 showTargets :: Bool -> [Chromosome] -> String
 showTargets ord []     = ""
@@ -110,8 +102,43 @@ rouletteHelper (x:xs) f | f <= snd x = fst x
 tupify :: Population -> (Chromosome -> Float) -> [(Chromosome, Float)]
 tupify p f = map (\w -> (w,f w)) p
 
-checkCrossover :: Configuration -> IO Bool
-checkCrossover c = getRandom (0.0, 1.0) >>= (\n -> return (crossoverRate c >= n))
+checkCrossover :: Configuration -> Chromosome -> Chromosome -> IO (Chromosome, Chromosome)
+checkCrossover c parent1 parent2 = checkFloat (0.0, 1.0) (crossoverRate c) >>= \v -> if v then crossover c parent1 parent2 else return (parent1,parent2)
+
+checkMutation :: Configuration -> Chromosome -> Chromosome -> IO (Chromosome, Chromosome)
+checkMutation c child1 child2 = checkFloat (0.0, 1.0) (mutationRate c) >>= \v -> if v then mutate c child1 child2 else (return (child1, child2))
+
+checkFloat :: (Float, Float) -> Float -> IO Bool
+checkFloat (lower, upper) p = getRandom (lower, upper) >>= (\n -> return (p >= n))
+
+mutate :: Configuration -> Chromosome -> Chromosome -> IO (Chromosome, Chromosome)
+mutate c child1 child2  | not $ ordered c = unorderedMutation c child1 child2
+                        | otherwise       = orderedMutation c child1 child2
+
+orderedMutation :: Configuration -> Chromosome -> Chromosome -> IO (Chromosome, Chromosome)
+orderedMutation c child1 child2 = swapValues >>= \l -> return $ (swap (head l) (head . tail $ l) child1, swap (head . tail . tail $ l) (last l) child2)
+   where
+      swapValues = sequence [getRandom (0, cSize), getRandom (0, cSize), getRandom (0, cSize), getRandom (0, cSize)]
+      cSize = (chromosomeSize c) - 1 
+      swap :: Int -> Int -> Chromosome -> Chromosome
+      swap x y child = if (val_x == val_y) then child else part1 ++ (val_x:part2) ++ (val_y:part3)
+         where
+            x' = min x y
+            y' = max x y
+            val_x = child !! x'
+            val_y = child !! y'
+            part1 = take x' child
+            part2 = take (y' - x' - 1) $ drop (x'+1) child 
+            part3 = drop (y'+1) child
+
+unorderedMutation :: Configuration -> Chromosome -> Chromosome -> IO (Chromosome, Chromosome)
+unorderedMutation c child1 child2 = getRandom (1, numberOfBitsInChromosome) >>= (\x -> getRandom (0, numberOfBitsInChromosome) >>= (\y -> return (reformChromosome (geneSize c) . mutateHelper x $ collapseChromosome (geneSize c) child1, reformChromosome (geneSize c) . mutateHelper y $ collapseChromosome (geneSize c) child2)))
+   where
+      numberOfBitsInChromosome = (geneSize c) * (chromosomeSize c)
+      flipBit :: Char -> Char
+      flipBit c = if c == '1' then '0' else '1'
+      mutateHelper i []     = []
+      mutateHelper i (x:xs) = if i == 1 then (flipBit x):(mutateHelper (i-1) xs) else x:(mutateHelper (i-1) xs)
 
 crossover :: Configuration -> Chromosome -> Chromosome -> IO (Chromosome,Chromosome)
 crossover c parent1 parent2   | not $ ordered c = onePointCrossover c parent1 parent2
@@ -126,12 +153,13 @@ onePointCrossover c parent1 parent2 = crossoverPoint >>= (\p -> return (reformCh
       crossoverPoint   = getRandom (1, (geneSize c) * (chromosomeSize c))
       collapsedParent1 = collapseChromosome (geneSize c) parent1
       collapsedParent2 = collapseChromosome (geneSize c) parent2
-      collapseChromosome :: Int -> Chromosome -> [Char]
-      collapseChromosome _ []                        = []
-      collapseChromosome genesize ((BitString x):xs) = x ++ (collapseChromosome genesize xs)
-      reformChromosome :: Int -> [Char] -> Chromosome 
-      reformChromosome _ []        = []
-      reformChromosome genesize xs = (BitString (take genesize xs)):(reformChromosome genesize (drop genesize xs))
+
+collapseChromosome :: Int -> Chromosome -> [Char]
+collapseChromosome _ []                        = []
+collapseChromosome genesize ((BitString x):xs) = x ++ (collapseChromosome genesize xs)
+reformChromosome :: Int -> [Char] -> Chromosome 
+reformChromosome _ []        = []
+reformChromosome genesize xs = (BitString (take genesize xs)):(reformChromosome genesize (drop genesize xs))
 
 orderedCrossover :: Int -> Int -> Chromosome -> Chromosome -> IO (Chromosome,Chromosome)
 orderedCrossover crossoverPoint1 crossoverPoint2 parent1 parent2 = return (child1, child2)
