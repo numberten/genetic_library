@@ -121,7 +121,7 @@ orderedMutation c child1 child2 = swapValues >>= \l -> return $ (swap (head l) (
       swapValues = sequence [getRandom (0, cSize), getRandom (0, cSize), getRandom (0, cSize), getRandom (0, cSize)]
       cSize = (chromosomeSize c) - 1 
       swap :: Int -> Int -> Chromosome -> Chromosome
-      swap x y child = if (val_x == val_y) then child else part1 ++ (val_x:part2) ++ (val_y:part3)
+      swap x y child = part1 ++ (val_y:part2) ++ (val_x:part3)
          where
             x' = min x y
             y' = max x y
