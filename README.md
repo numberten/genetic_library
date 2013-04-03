@@ -15,11 +15,12 @@ Currently Configurable Values
    - crossoverRate   (the likelihood that genes selected to breed will crossover)
    - fitnessFunction (a function that takes a chromosome and returns a fitness)
    - ordered         (boolean value, toggle for ordered chromosomes)
+   - mutationRate    (the probability that a gene will be selected for mutation)
 
 Configurable Values To Come
 ---------------------------
 
-   - mutationRate
+   - ~~mutationRate~~
    - flag for two-point crossover
    - ~~flag for ordered chromosomes~~
    - tournament selection option
