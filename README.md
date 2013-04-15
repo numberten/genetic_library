@@ -24,3 +24,4 @@ Configurable Values To Come
    - flag for two-point crossover
    - ~~flag for ordered chromosomes~~
    - tournament selection option
+   - option for user defined genes
