@@ -17,30 +17,48 @@ type Genetic a where
    generate    :: Configuration -> IO a
 
 data BitString = BitString B.ByteString
-
 data OrderedVals = OrderedVals B.ByteString
+
+zero = BitString $ B.singleton 0
+one  = BitString $ B.singleton 1
+
+generate_bitstring :: Configuration -> IO BitString
+generate_bitstring c = newStdGen >>= (\g -> return . BitString . take (geneSize c) $ randomRs ('0','1') g)
+
+generate_bitstring_chromosome :: Configuration -> IO [BitString]
+generate_bitstring_chromosome c = helper (chromosomeSize c) []
+   where
+      helper :: Int -> [BitString] -> IO [BitString]
+      helper i acc = do
+                     if (i <= 0)
+                        then
+                           return acc
+                        else do
+                           gene <- generate_bitstring c
+                           helper (i-1) (gene:acc)
 
 instance Genetic BitString where
    mutate :: Configuration -> BitString -> IO BitString
-   
+   mutate c bs = i >>= \n -> return flipBit n bs
+      where
+         i              = randomRIO (0,(chromosome_length c)-1)
+         (head, rest)   = B.splitAt i bs
+         flipBit :: BitString -> BitString
+         flipBit (Bitstring s)   | B.head s == 0 = BitString $ B.cons 1 $ B.tail s
+                                 | B.head s == 1 = BitString $ B.cons 0 $ B.tail s
+                                 | otherwise     = error "FlipBit: Non 0-1 Word8 in BitString."
+         
+   crossover :: Configuration -> BitString -> BitString -> IO (BitString, BitString)
+   crossover c parent1 parent2 = return (parent1, parent2)
 
+   generation :: Configuration -> IO BitString
+   generation c = word8s >>= \w -> return . BitString $ B.pack w
+      where
+         word8s :: IO [Word8]
+         word8s = newStdGen >>= \g -> return . take . chromosome_length c $ randomRs (0,1) g :: IO [Word8]
 
-   
-
-
-
-type Gene a where
-   mutate    :: Configuration -> [a] -> IO [a]
-   crossover :: Configuration -> [a] -> [a] -> IO [a]
-   generate  :: Configuration -> IO [a]
-
-instance Gene BitString where
-   crossover = onePointCrossover
-   mutate    = unorderedMutation
-   generate  = generate_bitstring_chromosome
-   
-instance Gene OrderedVal where
-   
+chromosome_length :: Configuration -> Int
+chromosome_length c = (geneSize c) * (chromosomeSize c)
 
 data Configuration = Config { geneSize             :: Int,
                               chromosomeSize       :: Int,
