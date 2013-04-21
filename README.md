@@ -24,6 +24,5 @@ Configurable Values To Come
    - flag for two-point crossover
    - ~~flag for ordered chromosomes~~
    - tournament selection option
-   - option for user defined genes
+   - ~~option for user defined genes~~
    - real number genes
-   - userdefined overriding of certain functions? (mutation, crossover, initial generation?)
