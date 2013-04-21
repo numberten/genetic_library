@@ -1,7 +1,7 @@
 module Genetics ( 
                   Configuration (..),
                   defaultConfig,
-                  Gene(Val),
+                  Gene(Val,BitString),
                   Chromosome,
                   runGA
                 )
