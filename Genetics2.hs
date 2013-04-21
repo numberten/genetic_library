@@ -1,7 +1,10 @@
-module Genetics ( 
+module Genetics2 ( 
                   Configuration (..),
                   defaultConfig,
-                  Genetic (mutate, crossover, generate)
+                  Genetic (mutate, crossover, generate),
+                  BitString(BitString),
+                  OrderedVals(OrderedVals),
+                  runGA
                 )
                 where
 
@@ -67,10 +70,11 @@ data Configuration a = Config {
                               fitnessFunction      :: a -> Float,
                               crossoverRate        :: Float,
                               ordered              :: Bool,
-                              mutationRate         :: Float
+                              mutationRate         :: Float,
+                              preciseFitness       :: Bool
                               }
 
-defaultConfig = Config { geneSize = 0, chromosomeSize = 0, populationSize = 0, maxGen = 0, targetFitness = 0, crossoverRate = 0, mutationRate = 0, ordered = False, fitnessFunction = (\w -> 0.0) }
+defaultConfig = Config { geneSize = 0, chromosomeSize = 0, populationSize = 0, maxGen = 0, targetFitness = 0, crossoverRate = 0, mutationRate = 0, ordered = False, fitnessFunction = (\w -> 0.0), preciseFitness = False }
 
 --data Gene = BitString [Char] | Val Int deriving (Show, Eq)
 --type Chromosome = [Gene]
@@ -106,15 +110,16 @@ breedPop c pop prevMax i = do
                                           putStrLn $ "Target met in "++show i++" generations."
                                           return filterMatch
                                        else do
-                                          putStrLn $ "Breeding generation "++show i++"..."
+                                          putStrLn $ "Breeding generation "++show i++"..."++(show totalFit)
                                           newGen <- newGeneration c tupifiedPop []
                                           breedPop c newGen thisMax $ i+1
    where
       fitnessList = map (fitnessFunction c) pop
+      totalFit    = sum fitnessList
       tupifiedPop = zip pop fitnessList
       thisMax     = fst $ maximumBy compareTup (prevMaxTup:tupifiedPop)
       prevMaxTup  = (prevMax, fitnessFunction c $ prevMax)
-      filterMatch = [fst x | x <- tupifiedPop, snd x >= (targetFitness c)]
+      filterMatch = [fst x | x <- tupifiedPop, if (preciseFitness c) then snd x == (targetFitness c) else snd x >= (targetFitness c)]
       compareTup t1 t2 = compare (snd t1) (snd t2) 
 
 newGeneration :: (Genetic g) => Configuration g -> [(g,Float)] -> [g] -> IO [g]
@@ -130,12 +135,14 @@ newGeneration c old new | populationSize c == length new       = return new
                                                                         newGeneration c old (child1':child2':new)
 
 rouletteSelect :: (Genetic g) => Configuration g -> [(g,Float)] -> IO (g,g)
-rouletteSelect c xs = child >>= (\w -> child >>= (\y -> return (w,y)))
+rouletteSelect c xs = child1 >>= (\w -> child2 >>= (\y -> return (w,y)))
    where
       rouletteHelper :: (Genetic g) => [(g,Float)] -> Float -> g
       rouletteHelper (x:xs) f | f <= snd x = fst x
                               | otherwise  = rouletteHelper xs (f - snd x)
-      child          = (newStdGen >>= return . fst . randomR (0.0, tots_fitness)) >>= return . rouletteHelper xs
+      rouletteHelper [] f = error $ "Ran out of chromosomes during roulette selection... how? " ++ (show f)
+      child1         = (newStdGen >>= return . fst . randomR (0.0, tots_fitness)) >>= return . rouletteHelper xs
+      child2         = (newStdGen >>= return . fst . randomR (0.0, tots_fitness)) >>= return . rouletteHelper xs
       tots_fitness   = foldl (\w -> (\s -> snd s + w)) 0 xs
 
 checkCrossover :: (Genetic g) => Configuration g -> g -> g -> IO (g,g)

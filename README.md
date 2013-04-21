@@ -16,6 +16,7 @@ Currently Configurable Values
    - fitnessFunction (a function that takes a chromosome and returns a fitness)
    - ordered         (boolean value, toggle for ordered chromosomes)
    - mutationRate    (the probability that a gene will be selected for mutation)
+   - preciseFitness  (true if you want to stop when a chromosome evalutes to targetFitness, false if you want to stop at gteq)
 
 Configurable Values To Come
 ---------------------------
