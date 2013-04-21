@@ -12,6 +12,7 @@ import System.Random
 import Data.Word
 import Data.List
 import qualified Data.ByteString as B
+import Debug.Trace
 
 class Genetic a where
    mutate      :: Configuration a -> a -> IO a
@@ -80,13 +81,13 @@ defaultConfig = Config { geneSize = 0, chromosomeSize = 0, populationSize = 0, m
 --type Chromosome = [Gene]
 --type Population = [Chromosome]
  
-runGA :: (Genetic g) => Configuration g -> IO [g]
+runGA :: (Genetic g, Show g) => Configuration g -> IO [g]
 runGA c = do
                pop <- generate_population c
                breedPop c pop (head pop) 1
 
 generate_population :: (Genetic g) => Configuration g -> IO [g]
-generate_population c = helper (chromosomeSize c) []
+generate_population c = helper (populationSize c) []
    where
 --    helper :: (Genetic g) => Int -> [g] -> IO [g]
       helper i xs = do
@@ -97,8 +98,9 @@ generate_population c = helper (chromosomeSize c) []
                               chromosome <- (generate c)
                               helper (i-1) (chromosome:xs)
 
-breedPop :: (Genetic g) => Configuration g -> [g] -> g -> Int -> IO [g]
+breedPop :: (Genetic g, Show g) => Configuration g -> [g] -> g -> Int -> IO [g]
 breedPop c pop prevMax i = do
+                              putStrLn . show $ (sum fitnessList) / (fromIntegral $ populationSize c)
                               if (maxGen c) < i
                                  then
                                     do
@@ -110,7 +112,7 @@ breedPop c pop prevMax i = do
                                           putStrLn $ "Target met in "++show i++" generations."
                                           return filterMatch
                                        else do
-                                          putStrLn $ "Breeding generation "++show i++"..."++(show totalFit)
+                                          putStrLn $ "Breeding generation "++show i++"..."++"\nTotal Fitness: "++(show totalFit)++"\nMax: "++(show thisMax)++"\nMAxF: "++(show . fitnessFunction c $ thisMax)
                                           newGen <- newGeneration c tupifiedPop []
                                           breedPop c newGen thisMax $ i+1
    where
