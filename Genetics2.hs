@@ -21,9 +21,6 @@ class Genetic a where
 data BitString = BitString B.ByteString 
 data OrderedVals = OrderedVals B.ByteString 
 
---zero = BitString $ B.singleton 0
---one  = BitString $ B.singleton 1
-
 instance Genetic BitString where
 
  --mutate :: Configuration BitString -> BitString -> IO BitString
@@ -76,10 +73,6 @@ data Configuration a = Config {
 
 defaultConfig = Config { geneSize = 0, chromosomeSize = 0, populationSize = 0, maxGen = 0, targetFitness = 0, crossoverRate = 0, mutationRate = 0, ordered = False, fitnessFunction = (\w -> 0.0), preciseFitness = False }
 
---data Gene = BitString [Char] | Val Int deriving (Show, Eq)
---type Chromosome = [Gene]
---type Population = [Chromosome]
- 
 runGA :: (Genetic g, Show g) => Configuration g -> IO [g]
 runGA c = do
                pop <- generate_population c
@@ -126,8 +119,8 @@ newGeneration :: (Genetic g) => Configuration g -> [(g,Float)] -> [g] -> IO [g]
 newGeneration c old new | populationSize c == length new       = return new
                         | otherwise                            = do
                                                                   (parent1, parent2) <- rouletteSelect c old
-                                                                  (child1, child2)   <- checkCrossover c parent1 parent2--crossover
-                                                                  (child1', child2') <- checkMutation c child1 child2--mutation
+                                                                  (child1, child2)   <- checkCrossover c parent1 parent2
+                                                                  (child1', child2') <- checkMutation c child1 child2
                                                                   if populationSize c == (length new) - 1
                                                                      then
                                                                         newGeneration c old (child1':new)
@@ -155,11 +148,4 @@ checkFloat :: (Float,Float) -> Float -> IO Bool
 checkFloat pair f = getRandom pair >>= (\n -> return $ f >= n)
 
 getRandom (lower,upper) = newStdGen >>= return . fst . randomR (lower, upper)
-
-
-
-
-
-
-
 
