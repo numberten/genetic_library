@@ -12,7 +12,6 @@ import System.Random
 import Data.Word
 import Data.List
 import qualified Data.ByteString as B
-import Debug.Trace
 
 class Genetic a where
    mutate      :: Configuration a -> a -> IO a
@@ -100,7 +99,6 @@ generate_population c = helper (populationSize c) []
 
 breedPop :: (Genetic g, Show g) => Configuration g -> [g] -> g -> Int -> IO [g]
 breedPop c pop prevMax i = do
-                              putStrLn . show $ (sum fitnessList) / (fromIntegral $ populationSize c)
                               if (maxGen c) < i
                                  then
                                     do
@@ -112,7 +110,7 @@ breedPop c pop prevMax i = do
                                           putStrLn $ "Target met in "++show i++" generations."
                                           return filterMatch
                                        else do
-                                          putStrLn $ "Breeding generation "++show i++"..."++"\nTotal Fitness: "++(show totalFit)++"\nMax: "++(show thisMax)++"\nMAxF: "++(show . fitnessFunction c $ thisMax)
+                                          putStrLn $ "Breeding generation "++show i++"..."++"\nTotal Fitness: "++(show totalFit)
                                           newGen <- newGeneration c tupifiedPop []
                                           breedPop c newGen thisMax $ i+1
    where
